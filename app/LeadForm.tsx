@@ -4,17 +4,54 @@ import { FormEvent, useState } from "react";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
 
+const getPhoneDigits = (value: string) => {
+  let digits = value.replace(/\D/g, "");
+
+  if (digits.startsWith("8")) {
+    digits = digits.slice(1);
+  } else if (digits.startsWith("7")) {
+    digits = digits.slice(1);
+  }
+
+  return digits.slice(0, 10);
+};
+
+const formatPhone = (digits: string) => {
+  if (!digits) return "";
+
+  const area = digits.slice(0, 3);
+  const first = digits.slice(3, 6);
+  const second = digits.slice(6, 8);
+  const third = digits.slice(8, 10);
+
+  let value = "+7";
+
+  if (area) value += ` (${area}`;
+  if (area.length === 3) value += ")";
+  if (first) value += ` ${first}`;
+  if (second) value += `-${second}`;
+  if (third) value += `-${third}`;
+
+  return value;
+};
+
 export default function LeadForm() {
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phoneDigits, setPhoneDigits] = useState("");
   const [state, setState] = useState<SubmitState>("idle");
   const [error, setError] = useState("");
+  const phone = formatPhone(phoneDigits);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!name.trim() || !phone.trim()) {
+    if (!name.trim() || !phoneDigits) {
       setError("Заполните имя и телефон");
+      return;
+    }
+
+    if (phoneDigits.length !== 10) {
+      setError("Введите полный номер телефона");
       return;
     }
 
@@ -39,7 +76,7 @@ export default function LeadForm() {
 
       setState("success");
       setName("");
-      setPhone("");
+      setPhoneDigits("");
     } catch {
       setState("error");
       setError("Не получилось отправить заявку. Попробуйте еще раз.");
@@ -64,9 +101,13 @@ export default function LeadForm() {
         />
         <input
           aria-label="Телефон"
+          inputMode="numeric"
+          maxLength={18}
           name="phone"
-          onChange={(event) => setPhone(event.target.value)}
-          placeholder="🇰🇿  +7 (000) 000-00-00"
+          onChange={(event) => setPhoneDigits(getPhoneDigits(event.target.value))}
+          onFocus={() => setPhoneDigits((current) => current)}
+          pattern="^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$"
+          placeholder="+7 (000) 000-00-00"
           required
           type="tel"
           value={phone}
