@@ -150,16 +150,16 @@ function FooterInfo() {
         </div>
         <div className="footerContacts">
           <p>
-            Частная компания «ReliTalk Ltd»
+            ИП Муратов
             <br />
-            Казахстан, Астана, Проспект Улы Дала, дом 58, кв. 116
+            Казахстан, Караганда, Байкен Ашимов 21
             <br />
-            БИН: 231040900076
+            БИН: 060611551367
           </p>
           <p>
-            8 708 050 5757
+            8 776 661 6110
             <br />
-            relitalk.service@mail.ru
+            schoolskyling@gmail.com
           </p>
         </div>
         <div className="footerSocials">
