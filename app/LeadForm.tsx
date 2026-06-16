@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, KeyboardEvent, useRef, useState } from "react";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
 
@@ -35,12 +35,58 @@ const formatPhone = (digits: string) => {
   return value;
 };
 
+const getCaretPosition = (formatted: string, localDigitCount: number) => {
+  if (localDigitCount <= 0) return formatted.length;
+
+  for (let index = 0; index < formatted.length; index += 1) {
+    if (getPhoneDigits(formatted.slice(0, index + 1)).length >= localDigitCount) {
+      return index + 1;
+    }
+  }
+
+  return formatted.length;
+};
+
 export default function LeadForm() {
+  const phoneInputRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState("");
   const [phoneDigits, setPhoneDigits] = useState("");
+  const [isPhoneFocused, setIsPhoneFocused] = useState(false);
   const [state, setState] = useState<SubmitState>("idle");
   const [error, setError] = useState("");
-  const phone = formatPhone(phoneDigits);
+  const phone = phoneDigits || isPhoneFocused ? formatPhone(phoneDigits) || "+7 " : "";
+
+  const handlePhoneBackspace = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Backspace") return;
+
+    const input = event.currentTarget;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+
+    if (start === null || end === null || start !== end) return;
+
+    const previousChar = input.value[start - 1];
+
+    if (!previousChar || /\d/.test(previousChar)) return;
+
+    event.preventDefault();
+
+    const localDigitsBeforeCursor = getPhoneDigits(input.value.slice(0, start));
+    const removeIndex = localDigitsBeforeCursor.length - 1;
+
+    if (removeIndex < 0) return;
+
+    const nextDigits =
+      phoneDigits.slice(0, removeIndex) + phoneDigits.slice(removeIndex + 1);
+    const nextValue = formatPhone(nextDigits) || "+7 ";
+    const nextCaret = getCaretPosition(nextValue, removeIndex);
+
+    setPhoneDigits(nextDigits);
+
+    requestAnimationFrame(() => {
+      phoneInputRef.current?.setSelectionRange(nextCaret, nextCaret);
+    });
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -105,9 +151,12 @@ export default function LeadForm() {
           maxLength={18}
           name="phone"
           onChange={(event) => setPhoneDigits(getPhoneDigits(event.target.value))}
-          onFocus={() => setPhoneDigits((current) => current)}
+          onBlur={() => setIsPhoneFocused(false)}
+          onFocus={() => setIsPhoneFocused(true)}
+          onKeyDown={handlePhoneBackspace}
           pattern="^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$"
           placeholder="+7 (000) 000-00-00"
+          ref={phoneInputRef}
           required
           type="tel"
           value={phone}
